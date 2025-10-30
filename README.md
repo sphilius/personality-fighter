@@ -1,4 +1,4 @@
-# Personality FIghter
+# Personality Fighter
 2D fighting game with personality-driven combat system
 
 ## Tech Stack
