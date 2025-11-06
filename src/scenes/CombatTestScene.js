@@ -53,6 +53,7 @@ export default class CombatTestScene extends Phaser.Scene {
       'K - Heavy Attack (25 dmg)',
       'L - Block (hold)',
       'Space - Take Damage (test)',
+      'O - Damage Opponent (test)',
       '',
       'Physics: Gravity, acceleration, jumps!',
     ];
@@ -75,6 +76,7 @@ export default class CombatTestScene extends Phaser.Scene {
       j: this.input.keyboard.addKey('J'),
       k: this.input.keyboard.addKey('K'),
       l: this.input.keyboard.addKey('L'),
+      o: this.input.keyboard.addKey('O'),
       space: this.input.keyboard.addKey('SPACE'),
     };
 
@@ -114,6 +116,11 @@ export default class CombatTestScene extends Phaser.Scene {
     this.keys.space.on('down', () => {
       this.player.takeDamage(15, { x: 50, y: 0 });
     });
+
+    // Test damage to opponent
+    this.keys.o.on('down', () => {
+      this.opponent.takeDamage(15, { x: -50, y: 0 });
+    });
   }
 
   createStateDisplay() {
@@ -151,6 +158,7 @@ export default class CombatTestScene extends Phaser.Scene {
   updateStateDisplay() {
     const playerState = this.player.stateMachine.getCurrentState();
     const playerFrame = this.player.stateMachine.currentState.frameCount;
+    const opponentState = this.opponent.stateMachine.getCurrentState();
 
     const info = [
       `Player State: ${playerState.toUpperCase()}`,
@@ -159,6 +167,11 @@ export default class CombatTestScene extends Phaser.Scene {
       `Meter: ${Math.round(this.player.currentMeter)}/${this.player.maxMeter}`,
       `Blocking: ${this.player.isBlocking}`,
       `Hitbox: ${this.player.hitboxActive}`,
+      '',
+      `--- OPPONENT ---`,
+      `State: ${opponentState.toUpperCase()}`,
+      `HP: ${this.opponent.currentHP}/${this.opponent.maxHP}`,
+      `Meter: ${Math.round(this.opponent.currentMeter)}/${this.opponent.maxMeter}`,
     ];
 
     this.stateText.setText(info.join('\n'));

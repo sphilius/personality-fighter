@@ -28,13 +28,13 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
     this.stats = {
       attack: 10,
       defense: 10,
-      speed: 400, // Increased for more responsive movement
+      speed: 600, // High-speed movement for fast-paced combat
     };
 
     // Physics
     this.velocity = { x: 0, y: 0 };
-    this.acceleration = 1800; // How fast we reach max speed (50% increase)
-    this.deceleration = 1800; // How fast we stop (snappier)
+    this.acceleration = 2200; // Very responsive acceleration
+    this.deceleration = 2200; // Fast stopping to match acceleration
     this.gravity = 1500; // Pixels per second squared
     this.jumpForce = -600; // Negative = upward
     this.groundY = y; // Remember ground position
