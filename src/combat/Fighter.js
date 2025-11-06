@@ -28,8 +28,18 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
     this.stats = {
       attack: 10,
       defense: 10,
-      speed: 200,
+      speed: 300, // Increased from 200 for snappier movement
     };
+
+    // Physics
+    this.velocity = { x: 0, y: 0 };
+    this.acceleration = 1200; // How fast we reach max speed
+    this.deceleration = 1800; // How fast we stop (snappier)
+    this.gravity = 1500; // Pixels per second squared
+    this.jumpForce = -600; // Negative = upward
+    this.groundY = y; // Remember ground position
+    this.isGrounded = true;
+    this.maxFallSpeed = 800;
 
     // State
     this.facingRight = true;
@@ -55,6 +65,27 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
    * @param {number} delta - Time since last frame (ms)
    */
   update(delta) {
+    const deltaSeconds = delta / 1000;
+
+    // Apply gravity
+    if (!this.isGrounded) {
+      this.velocity.y += this.gravity * deltaSeconds;
+      this.velocity.y = Math.min(this.velocity.y, this.maxFallSpeed);
+    }
+
+    // Apply velocity to position
+    this.x += this.velocity.x * deltaSeconds;
+    this.y += this.velocity.y * deltaSeconds;
+
+    // Ground check
+    if (this.y >= this.groundY) {
+      this.y = this.groundY;
+      this.velocity.y = 0;
+      this.isGrounded = true;
+    } else {
+      this.isGrounded = false;
+    }
+
     // Update state machine
     this.stateMachine.update(delta);
 
@@ -97,15 +128,14 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
   }
 
   /**
-   * Set movement direction
+   * Set movement direction (horizontal only)
    * @param {number} x - Horizontal direction (-1, 0, 1)
-   * @param {number} y - Vertical direction (-1, 0, 1)
    */
-  setMoveDirection(x, y) {
-    this.moveDirection = { x, y };
+  setMoveDirection(x) {
+    this.moveDirection.x = x;
 
-    if (x !== 0 || y !== 0) {
-      // Start moving if idle
+    if (x !== 0) {
+      // Start moving if idle and grounded
       if (this.stateMachine.isInState('idle')) {
         this.stateMachine.transition('moving');
       }
@@ -114,6 +144,17 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
       if (this.stateMachine.isInState('moving')) {
         this.stateMachine.transition('idle');
       }
+    }
+  }
+
+  /**
+   * Make fighter jump
+   */
+  jump() {
+    if (this.isGrounded && this.stateMachine.canAct()) {
+      this.velocity.y = this.jumpForce;
+      this.isGrounded = false;
+      console.log(`${this.name} jumps!`);
     }
   }
 

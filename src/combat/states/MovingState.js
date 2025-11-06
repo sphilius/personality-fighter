@@ -22,26 +22,38 @@ export default class MovingState extends State {
   update(fighter, delta) {
     super.update(fighter, delta);
 
-    // Apply movement based on input
-    if (fighter.moveDirection) {
-      const velocity = this.moveSpeed * (delta / 1000);
-      fighter.x += fighter.moveDirection.x * velocity;
-      fighter.y += fighter.moveDirection.y * velocity;
+    const deltaSeconds = delta / 1000;
+    const targetSpeed = fighter.stats.speed * fighter.moveDirection.x;
 
-      // Update facing direction
-      if (fighter.moveDirection.x > 0) {
-        fighter.facingRight = true;
-        fighter.setFlipX(false);
-      } else if (fighter.moveDirection.x < 0) {
-        fighter.facingRight = false;
-        fighter.setFlipX(true);
-      }
+    // Accelerate/decelerate toward target speed (snappier movement)
+    if (Math.abs(targetSpeed - fighter.velocity.x) < 10) {
+      // Close enough, snap to target
+      fighter.velocity.x = targetSpeed;
+    } else if (targetSpeed > fighter.velocity.x) {
+      // Accelerate right
+      fighter.velocity.x += fighter.acceleration * deltaSeconds;
+      fighter.velocity.x = Math.min(fighter.velocity.x, targetSpeed);
+    } else {
+      // Accelerate left or decelerate
+      const accel = (fighter.moveDirection.x === 0) ? fighter.deceleration : fighter.acceleration;
+      fighter.velocity.x -= accel * deltaSeconds;
+      fighter.velocity.x = Math.max(fighter.velocity.x, targetSpeed);
+    }
+
+    // Update facing direction
+    if (fighter.moveDirection.x > 0) {
+      fighter.facingRight = true;
+      fighter.setFlipX(false);
+    } else if (fighter.moveDirection.x < 0) {
+      fighter.facingRight = false;
+      fighter.setFlipX(true);
     }
   }
 
   exit(fighter) {
     super.exit(fighter);
-    // Velocity handled manually in Fighter class
+    // Apply deceleration when stopping
+    fighter.moveDirection.x = 0;
   }
 
   canTransitionTo(toState) {

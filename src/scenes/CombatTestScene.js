@@ -47,13 +47,14 @@ export default class CombatTestScene extends Phaser.Scene {
       'COMBAT STATE MACHINE TEST',
       '',
       'Controls:',
-      'WASD - Move',
-      'J - Light Attack',
-      'K - Heavy Attack',
-      'L - Block',
+      'A/D - Move Left/Right',
+      'W - Jump',
+      'J - Light Attack (10 dmg)',
+      'K - Heavy Attack (25 dmg)',
+      'L - Block (hold)',
       'Space - Take Damage (test)',
       '',
-      'Watch the state changes in the corner!',
+      'Physics: Gravity, acceleration, jumps!',
     ];
 
     this.add.text(20, 20, instructions.join('\n'), {
@@ -102,6 +103,11 @@ export default class CombatTestScene extends Phaser.Scene {
 
     this.keys.l.on('up', () => {
       this.player.stopBlock();
+    });
+
+    // Jump on W key
+    this.keys.w.on('down', () => {
+      this.player.jump();
     });
 
     // Test damage

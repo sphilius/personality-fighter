@@ -21,8 +21,18 @@ export default class IdleState extends State {
   update(fighter, delta) {
     super.update(fighter, delta);
 
-    // Idle state can transition to any other state based on input
-    // This is the "neutral" state
+    // Apply deceleration in idle (smooth stop)
+    const deltaSeconds = delta / 1000;
+    if (Math.abs(fighter.velocity.x) > 5) {
+      const decel = fighter.deceleration * deltaSeconds;
+      if (fighter.velocity.x > 0) {
+        fighter.velocity.x = Math.max(0, fighter.velocity.x - decel);
+      } else {
+        fighter.velocity.x = Math.min(0, fighter.velocity.x + decel);
+      }
+    } else {
+      fighter.velocity.x = 0;
+    }
   }
 
   canTransitionTo(toState) {
