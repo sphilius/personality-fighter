@@ -39,6 +39,10 @@ export default class CombatTestScene extends Phaser.Scene {
     // State display
     this.createStateDisplay();
 
+    // Round management
+    this.roundActive = true;
+    this.roundOverText = null;
+
     console.log('Combat Test Scene ready!');
   }
 
@@ -54,8 +58,9 @@ export default class CombatTestScene extends Phaser.Scene {
       'L - Block (hold)',
       'Space - Take Damage (test)',
       'O - Damage Opponent (test)',
+      'R - Restart Round',
       '',
-      'Physics: Gravity, acceleration, jumps!',
+      'First to 0 HP loses!',
     ];
 
     this.add.text(20, 20, instructions.join('\n'), {
@@ -136,15 +141,26 @@ export default class CombatTestScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    // Handle movement input
-    let moveX = 0;
+    // Check for KO
+    if (this.roundActive) {
+      if (this.player.currentHP <= 0) {
+        this.endRound('OPPONENT WINS!');
+      } else if (this.opponent.currentHP <= 0) {
+        this.endRound('PLAYER WINS!');
+      }
+    }
 
-    if (this.keys.a.isDown) moveX = -1;
-    if (this.keys.d.isDown) moveX = 1;
+    // Handle movement input (only if round is active)
+    if (this.roundActive) {
+      let moveX = 0;
 
-    this.player.setMoveDirection(moveX);
+      if (this.keys.a.isDown) moveX = -1;
+      if (this.keys.d.isDown) moveX = 1;
 
-    // Update fighters
+      this.player.setMoveDirection(moveX);
+    }
+
+    // Update fighters (always update for animations)
     this.player.update(delta);
     this.opponent.update(delta);
 
@@ -153,6 +169,64 @@ export default class CombatTestScene extends Phaser.Scene {
 
     // Update state display
     this.updateStateDisplay();
+  }
+
+  endRound(message) {
+    this.roundActive = false;
+    console.log(`Round over: ${message}`);
+
+    // Display round over message
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    if (!this.roundOverText) {
+      this.roundOverText = this.add.text(width / 2, height / 2 - 50, message, {
+        fontFamily: 'Arial',
+        fontSize: '64px',
+        color: '#ffff00',
+        stroke: '#000000',
+        strokeThickness: 8,
+      });
+      this.roundOverText.setOrigin(0.5);
+
+      this.add.text(width / 2, height / 2 + 50, 'Press R to Restart', {
+        fontFamily: 'Arial',
+        fontSize: '32px',
+        color: '#ffffff',
+        stroke: '#000000',
+        strokeThickness: 4,
+      }).setOrigin(0.5);
+
+      // Add R key for restart
+      this.keys.r = this.input.keyboard.addKey('R');
+      this.keys.r.on('down', () => {
+        this.restartRound();
+      });
+    }
+  }
+
+  restartRound() {
+    console.log('Restarting round...');
+
+    // Reset fighters
+    this.player.reset();
+    this.opponent.reset();
+
+    // Clear round over UI
+    if (this.roundOverText) {
+      this.roundOverText.destroy();
+      this.roundOverText = null;
+    }
+
+    // Find and destroy the restart text
+    this.children.list.forEach(child => {
+      if (child.text === 'Press R to Restart') {
+        child.destroy();
+      }
+    });
+
+    // Restart round
+    this.roundActive = true;
   }
 
   updateStateDisplay() {
