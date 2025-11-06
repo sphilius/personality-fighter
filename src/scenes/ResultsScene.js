@@ -200,13 +200,22 @@ export default class ResultsScene extends Phaser.Scene {
       ease: 'Power2',
     });
 
-    // Flash effect
-    this.cameras.main.flash(
-      1000,
-      (this.classColors.primary >> 16) & 0xFF,
-      (this.classColors.primary >> 8) & 0xFF,
-      this.classColors.primary & 0xFF
+    // Flash effect - using a simple overlay instead of camera.flash()
+    const flashOverlay = this.add.rectangle(
+      width / 2,
+      height / 2,
+      width,
+      height,
+      this.classColors.primary,
+      0.5
     );
+    this.tweens.add({
+      targets: flashOverlay,
+      alpha: 0,
+      duration: 1000,
+      ease: 'Power2',
+      onComplete: () => flashOverlay.destroy(),
+    });
 
     // Class name text
     this.time.delayedCall(500, () => {
