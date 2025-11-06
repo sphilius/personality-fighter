@@ -63,7 +63,7 @@ export default class BootScene extends Phaser.Scene {
       this.registry.set('currentScenario', 0);
     }
 
-    // Start the intro scene
-    this.scene.start('IntroScene');
+    // Start the main menu
+    this.scene.start('MainMenuScene');
   }
 }
