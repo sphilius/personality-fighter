@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
 import BootScene from './scenes/BootScene.js';
+import MainMenuScene from './scenes/MainMenuScene.js';
 import IntroScene from './scenes/IntroScene.js';
 import AssessmentScene from './scenes/AssessmentScene.js';
 import ResultsScene from './scenes/ResultsScene.js';
+import CombatTestScene from './scenes/CombatTestScene.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -20,7 +22,7 @@ const config = {
       debug: false,
     },
   },
-  scene: [BootScene, IntroScene, AssessmentScene, ResultsScene],
+  scene: [BootScene, MainMenuScene, IntroScene, AssessmentScene, ResultsScene, CombatTestScene],
   backgroundColor: '#000000',
 };
 
