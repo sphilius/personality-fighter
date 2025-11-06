@@ -9,13 +9,15 @@ export default class BlockingState extends State {
   enter(fighter) {
     super.enter(fighter);
 
-    // Stop movement
-    fighter.setVelocity(0, 0);
+    // Stop movement - handled manually
     fighter.isBlocking = true;
 
-    // Play block animation
+    // Play block animation (if available)
     if (fighter.anims) {
-      fighter.anims.play(`${fighter.fighterType}_block`, true);
+      const animKey = `${fighter.fighterType}_block`;
+      if (fighter.anims.exists(animKey)) {
+        fighter.anims.play(animKey, true);
+      }
     }
 
     console.log(`${fighter.name} is blocking`);

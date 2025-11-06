@@ -9,14 +9,16 @@ export default class DownedState extends State {
   enter(fighter) {
     super.enter(fighter);
 
-    // Fighter is knocked down
-    fighter.setVelocity(0, 0);
+    // Fighter is knocked down - velocity handled manually
     fighter.hitboxActive = false;
     fighter.isVulnerable = false; // Can't be hit while getting up
 
-    // Play knockdown animation
+    // Play knockdown animation (if available)
     if (fighter.anims) {
-      fighter.anims.play(`${fighter.fighterType}_downed`, true);
+      const animKey = `${fighter.fighterType}_downed`;
+      if (fighter.anims.exists(animKey)) {
+        fighter.anims.play(animKey, true);
+      }
     }
 
     console.log(`${fighter.name} is downed!`);

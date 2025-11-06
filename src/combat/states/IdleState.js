@@ -7,11 +7,14 @@ export default class IdleState extends State {
 
   enter(fighter) {
     super.enter(fighter);
-    fighter.setVelocity(0, 0);
+    // Velocity handled manually in Fighter class, not via physics
 
-    // Play idle animation
+    // Play idle animation (if available)
     if (fighter.anims) {
-      fighter.anims.play(`${fighter.fighterType}_idle`, true);
+      const animKey = `${fighter.fighterType}_idle`;
+      if (fighter.anims.exists(animKey)) {
+        fighter.anims.play(animKey, true);
+      }
     }
   }
 

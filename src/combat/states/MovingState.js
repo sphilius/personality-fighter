@@ -9,10 +9,13 @@ export default class MovingState extends State {
   enter(fighter) {
     super.enter(fighter);
 
-    // Play walk/run animation
+    // Play walk/run animation (if available)
     if (fighter.anims) {
       const direction = fighter.facingRight ? 'right' : 'left';
-      fighter.anims.play(`${fighter.fighterType}_walk_${direction}`, true);
+      const animKey = `${fighter.fighterType}_walk_${direction}`;
+      if (fighter.anims.exists(animKey)) {
+        fighter.anims.play(animKey, true);
+      }
     }
   }
 
@@ -38,7 +41,7 @@ export default class MovingState extends State {
 
   exit(fighter) {
     super.exit(fighter);
-    fighter.setVelocity(0, 0);
+    // Velocity handled manually in Fighter class
   }
 
   canTransitionTo(toState) {

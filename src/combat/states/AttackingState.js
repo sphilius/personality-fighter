@@ -20,11 +20,10 @@ export default class AttackingState extends State {
     this.recoveryFrames = moveData.frames.recovery;
     this.totalFrames = this.startupFrames + this.activeFrames + this.recoveryFrames;
 
-    // Stop movement
-    fighter.setVelocity(0, 0);
+    // Stop movement - handled manually in Fighter class
 
-    // Play attack animation
-    if (fighter.anims && moveData.animationKey) {
+    // Play attack animation (if available)
+    if (fighter.anims && moveData.animationKey && fighter.anims.exists(moveData.animationKey)) {
       fighter.anims.play(moveData.animationKey, true);
     }
 
