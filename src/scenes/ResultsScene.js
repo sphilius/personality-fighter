@@ -8,31 +8,43 @@ export default class ResultsScene extends Phaser.Scene {
   }
 
   create() {
-    const width = this.cameras.main.width;
-    const height = this.cameras.main.height;
+    try {
+      const width = this.cameras.main.width;
+      const height = this.cameras.main.height;
 
-    // Get personality scores
-    const scores = this.registry.get('personalityScores');
+      // Get personality scores
+      const scores = this.registry.get('personalityScores');
+      console.log('Personality Scores:', scores);
 
-    // Calculate final class
-    this.result = PersonalityScorer.calculateFinalClass(scores);
-    this.classData = PersonalityScorer.getClassDescription(this.result.abilityClass);
-    this.classColors = PersonalityScorer.getClassColors(this.result.abilityClass);
+      // Calculate final class
+      this.result = PersonalityScorer.calculateFinalClass(scores);
+      console.log('Assigned Class:', this.result.abilityClass);
 
-    // Store result
-    this.registry.set('assignedClass', this.result.abilityClass);
+      this.classData = PersonalityScorer.getClassDescription(this.result.abilityClass);
+      this.classColors = PersonalityScorer.getClassColors(this.result.abilityClass);
 
-    // Create background with class color
-    this.createBackground();
+      // Store result
+      this.registry.set('assignedClass', this.result.abilityClass);
 
-    // Create dialogue box
-    this.dialogueBox = new DialogueBox(this, width / 2, height - 150);
+      // Create background with class color
+      this.createBackground();
 
-    // Start reveal sequence
-    this.cameras.main.fadeIn(1000, 0, 0, 0);
-    this.time.delayedCall(1000, () => {
-      this.startRevealSequence();
-    });
+      // Create dialogue box
+      this.dialogueBox = new DialogueBox(this, width / 2, height - 150);
+
+      // Start reveal sequence
+      this.cameras.main.fadeIn(1000, 0, 0, 0);
+      this.time.delayedCall(1000, () => {
+        this.startRevealSequence();
+      });
+    } catch (error) {
+      console.error('Error in ResultsScene.create():', error);
+      // Fallback: show simple text
+      this.add.text(960, 540, 'Error loading results. Check console.', {
+        fontSize: '32px',
+        color: '#ff0000',
+      }).setOrigin(0.5);
+    }
   }
 
   createBackground() {
@@ -47,17 +59,23 @@ export default class ResultsScene extends Phaser.Scene {
     graphics.fillGradientStyle(color1, color1, color2, color2, 0.3);
     graphics.fillRect(0, 0, width, height);
 
-    // Add class-colored particles
-    const particles = this.add.particles(0, 0, 'white', {
-      x: { min: 0, max: width },
-      y: { min: 0, max: height },
-      scale: { start: 0.2, end: 0 },
-      alpha: { start: 0.6, end: 0 },
-      tint: this.classColors.primary,
-      lifespan: 3000,
-      frequency: 150,
-      blendMode: 'ADD',
-    });
+    // Add class-colored particles (optional - don't break if it fails)
+    try {
+      if (this.textures.exists('white')) {
+        const particles = this.add.particles(0, 0, 'white', {
+          x: { min: 0, max: width },
+          y: { min: 0, max: height },
+          scale: { start: 0.2, end: 0 },
+          alpha: { start: 0.6, end: 0 },
+          tint: this.classColors.primary,
+          lifespan: 3000,
+          frequency: 150,
+          blendMode: 'ADD',
+        });
+      }
+    } catch (error) {
+      console.warn('Could not create particles:', error);
+    }
 
     // Create arena floor with class symbol
     this.createClassSymbol();
@@ -88,6 +106,7 @@ export default class ResultsScene extends Phaser.Scene {
   }
 
   startRevealSequence() {
+    console.log('Starting reveal sequence...');
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
@@ -95,30 +114,35 @@ export default class ResultsScene extends Phaser.Scene {
     const sequence = [
       {
         action: () => {
+          console.log('Step 1: Showing dialogue');
           this.dialogueBox.show('The arena has spoken. You are...');
         },
         delay: 2500,
       },
       {
         action: () => {
+          console.log('Step 2: Revealing class name');
           this.revealClassName();
         },
         delay: 3000,
       },
       {
         action: () => {
+          console.log('Step 3: Showing class description');
           this.dialogueBox.show(this.classData.description);
         },
         delay: 4000,
       },
       {
         action: () => {
+          console.log('Step 4: Showing class details');
           this.showClassDetails();
         },
         delay: 5000,
       },
       {
         action: () => {
+          console.log('Step 5: Showing continue button');
           this.showContinueButton();
         },
         delay: 2000,
@@ -129,10 +153,19 @@ export default class ResultsScene extends Phaser.Scene {
   }
 
   playSequence(sequence, index) {
-    if (index >= sequence.length) return;
+    if (index >= sequence.length) {
+      console.log('Sequence complete');
+      return;
+    }
 
+    console.log(`Playing sequence step ${index + 1} of ${sequence.length}`);
     const step = sequence[index];
-    step.action();
+
+    try {
+      step.action();
+    } catch (error) {
+      console.error(`Error in sequence step ${index}:`, error);
+    }
 
     this.time.delayedCall(step.delay, () => {
       this.playSequence(sequence, index + 1);
@@ -167,15 +200,22 @@ export default class ResultsScene extends Phaser.Scene {
       ease: 'Power2',
     });
 
-    // Flash effect
-    this.cameras.main.flash(
-      1000,
-      (this.classColors.primary >> 16) & 0xFF,
-      (this.classColors.primary >> 8) & 0xFF,
-      this.classColors.primary & 0xFF,
-      false,
+    // Flash effect - using a simple overlay instead of camera.flash()
+    const flashOverlay = this.add.rectangle(
+      width / 2,
+      height / 2,
+      width,
+      height,
+      this.classColors.primary,
       0.5
     );
+    this.tweens.add({
+      targets: flashOverlay,
+      alpha: 0,
+      duration: 1000,
+      ease: 'Power2',
+      onComplete: () => flashOverlay.destroy(),
+    });
 
     // Class name text
     this.time.delayedCall(500, () => {

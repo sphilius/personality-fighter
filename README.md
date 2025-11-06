@@ -31,6 +31,25 @@
 
 ### Installation & Running
 
+**For Windows 11 (Recommended):**
+```bash
+# 1. Clone the repository
+git clone https://github.com/sphilius/personality-fighter.git
+cd personality-fighter
+
+# 2. Install pnpm (better Windows compatibility)
+npm install -g pnpm
+
+# 3. Install dependencies
+pnpm install
+
+# 4. Start development server
+pnpm run dev
+
+# 5. Open your browser to http://localhost:5173
+```
+
+**For macOS/Linux:**
 ```bash
 # 1. Clone the repository
 git clone https://github.com/sphilius/personality-fighter.git
@@ -45,6 +64,8 @@ npm run dev
 # 4. Open your browser to http://localhost:5173
 ```
 
+> **Note for Windows users:** Due to an npm bug with optional dependencies ([#4828](https://github.com/npm/cli/issues/4828)), we recommend using **pnpm** instead of npm on Windows. This avoids issues with the `@rollup/rollup-win32-x64-msvc` package.
+
 ### Controls (Desktop Testing)
 - **Keyboard**: Use number keys 1, 2, 3 to select choices during assessment
 - **Mouse**: Click on choice buttons
@@ -52,6 +73,11 @@ npm run dev
 
 ### Building for Production
 ```bash
+# Windows (using pnpm)
+pnpm run build
+pnpm run preview
+
+# macOS/Linux (using npm)
 npm run build
 npm run preview
 ```
