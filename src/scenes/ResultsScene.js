@@ -205,9 +205,7 @@ export default class ResultsScene extends Phaser.Scene {
       1000,
       (this.classColors.primary >> 16) & 0xFF,
       (this.classColors.primary >> 8) & 0xFF,
-      this.classColors.primary & 0xFF,
-      false,
-      0.5
+      this.classColors.primary & 0xFF
     );
 
     // Class name text
