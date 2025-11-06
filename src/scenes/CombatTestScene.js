@@ -131,18 +131,18 @@ export default class CombatTestScene extends Phaser.Scene {
   update(time, delta) {
     // Handle movement input
     let moveX = 0;
-    let moveY = 0;
 
     if (this.keys.a.isDown) moveX = -1;
     if (this.keys.d.isDown) moveX = 1;
-    if (this.keys.w.isDown) moveY = -1;
-    if (this.keys.s.isDown) moveY = 1;
 
-    this.player.setMoveDirection(moveX, moveY);
+    this.player.setMoveDirection(moveX);
 
     // Update fighters
     this.player.update(delta);
     this.opponent.update(delta);
+
+    // Handle body collision between fighters
+    this.player.handleCollision(this.opponent);
 
     // Update state display
     this.updateStateDisplay();

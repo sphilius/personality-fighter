@@ -28,12 +28,12 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
     this.stats = {
       attack: 10,
       defense: 10,
-      speed: 300, // Increased from 200 for snappier movement
+      speed: 400, // Increased for more responsive movement
     };
 
     // Physics
     this.velocity = { x: 0, y: 0 };
-    this.acceleration = 1200; // How fast we reach max speed
+    this.acceleration = 1800; // How fast we reach max speed (50% increase)
     this.deceleration = 1800; // How fast we stop (snappier)
     this.gravity = 1500; // Pixels per second squared
     this.jumpForce = -600; // Negative = upward
@@ -155,6 +155,39 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
       this.velocity.y = this.jumpForce;
       this.isGrounded = false;
       console.log(`${this.name} jumps!`);
+    }
+  }
+
+  /**
+   * Handle collision with another fighter
+   * @param {Fighter} otherFighter - The fighter we're colliding with
+   */
+  handleCollision(otherFighter) {
+    // Calculate overlap
+    const thisLeft = this.x - this.displayWidth / 2;
+    const thisRight = this.x + this.displayWidth / 2;
+    const otherLeft = otherFighter.x - otherFighter.displayWidth / 2;
+    const otherRight = otherFighter.x + otherFighter.displayWidth / 2;
+
+    // Check if fighters are overlapping horizontally
+    if (thisRight > otherLeft && thisLeft < otherRight) {
+      // Calculate push direction and amount
+      const overlapLeft = thisRight - otherLeft;
+      const overlapRight = otherRight - thisLeft;
+      const overlap = Math.min(overlapLeft, overlapRight);
+
+      // Push fighters apart (split the overlap)
+      const pushAmount = overlap / 2;
+
+      if (this.x < otherFighter.x) {
+        // This fighter is on the left
+        this.x -= pushAmount;
+        otherFighter.x += pushAmount;
+      } else {
+        // This fighter is on the right
+        this.x += pushAmount;
+        otherFighter.x -= pushAmount;
+      }
     }
   }
 
