@@ -11,8 +11,7 @@ export default class MovingState extends State {
 
     // Play walk/run animation (if available)
     if (fighter.anims) {
-      const direction = fighter.facingRight ? 'right' : 'left';
-      const animKey = `${fighter.fighterType}_walk_${direction}`;
+      const animKey = `${fighter.fighterType}_walk`;
       if (fighter.anims.exists(animKey)) {
         fighter.anims.play(animKey, true);
       }

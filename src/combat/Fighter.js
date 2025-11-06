@@ -6,19 +6,32 @@ import FighterStateMachine from './FighterStateMachine.js';
  * Uses state machine for behavior management
  */
 export default class Fighter extends Phaser.GameObjects.Sprite {
-  constructor(scene, x, y, name = 'Fighter') {
-    // Create sprite (using placeholder for now)
-    super(scene, x, y, 'white');
+  constructor(scene, x, y, name = 'Fighter', fighterType = 'generic') {
+    // Determine sprite texture
+    const textureKey = `fighter_${fighterType}`;
+    const hasTexture = scene.textures.exists(textureKey);
+
+    // Create sprite (use spritesheet if available, fallback to placeholder)
+    super(scene, x, y, hasTexture ? textureKey : 'white');
 
     this.scene = scene;
     this.name = name;
+    this.fighterType = fighterType;
+    this.hasSprite = hasTexture;
 
-    // Visual setup (placeholder)
-    this.setDisplaySize(60, 160);
-    this.setOrigin(0.5, 1); // Bottom-center origin
+    // Visual setup
+    if (this.hasSprite) {
+      // Using actual spritesheet
+      this.setOrigin(0.5, 1); // Bottom-center origin
+      this.setScale(1.25); // Scale up from 128x128 to ~160px tall
+    } else {
+      // Using placeholder rectangle
+      this.setDisplaySize(60, 160);
+      this.setOrigin(0.5, 1); // Bottom-center origin
+    }
 
     // Fighter properties
-    this.fighterType = 'generic'; // Will be overridden by class-specific fighters
+    // fighterType already set above
     this.maxHP = 100;
     this.currentHP = 100;
     this.maxMeter = 100;
@@ -154,6 +167,15 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
     if (this.isGrounded && this.stateMachine.canAct()) {
       this.velocity.y = this.jumpForce;
       this.isGrounded = false;
+
+      // Play jump animation if available
+      if (this.anims) {
+        const animKey = `${this.fighterType}_jump`;
+        if (this.anims.exists(animKey)) {
+          this.anims.play(animKey, false);
+        }
+      }
+
       console.log(`${this.name} jumps!`);
     }
   }
