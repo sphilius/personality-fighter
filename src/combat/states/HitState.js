@@ -14,8 +14,7 @@ export default class HitState extends State {
     this.hitstunDuration = damageData.hitstun || 20;
     this.knockback = damageData.knockback || { x: 0, y: 0 };
 
-    // Stop current actions
-    fighter.setVelocity(0, 0);
+    // Stop current actions - velocity handled manually
     fighter.hitboxActive = false;
 
     // Apply knockback
@@ -24,9 +23,12 @@ export default class HitState extends State {
       fighter.y += this.knockback.y;
     }
 
-    // Play hit animation
+    // Play hit animation (if available)
     if (fighter.anims) {
-      fighter.anims.play(`${fighter.fighterType}_hit`, true);
+      const animKey = `${fighter.fighterType}_hit`;
+      if (fighter.anims.exists(animKey)) {
+        fighter.anims.play(animKey, true);
+      }
     }
 
     // Visual feedback

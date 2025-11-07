@@ -9,13 +9,15 @@ export default class BlockingState extends State {
   enter(fighter) {
     super.enter(fighter);
 
-    // Stop movement
-    fighter.setVelocity(0, 0);
+    // Stop movement - handled manually
     fighter.isBlocking = true;
 
-    // Play block animation
+    // Play block animation (if available)
     if (fighter.anims) {
-      fighter.anims.play(`${fighter.fighterType}_block`, true);
+      const animKey = `${fighter.fighterType}_block`;
+      if (fighter.anims.exists(animKey)) {
+        fighter.anims.play(animKey, true);
+      }
     }
 
     console.log(`${fighter.name} is blocking`);
@@ -24,8 +26,31 @@ export default class BlockingState extends State {
   update(fighter, delta) {
     super.update(fighter, delta);
 
-    // Block state is maintained by input
-    // Will exit when player releases block button
+    // Allow slow movement while blocking (250 speed max)
+    const deltaSeconds = delta / 1000;
+    const blockMoveSpeed = 250; // Slower than normal (400)
+    const targetSpeed = blockMoveSpeed * fighter.moveDirection.x;
+
+    // Accelerate/decelerate toward target speed
+    if (Math.abs(targetSpeed - fighter.velocity.x) < 10) {
+      fighter.velocity.x = targetSpeed;
+    } else if (targetSpeed > fighter.velocity.x) {
+      fighter.velocity.x += fighter.acceleration * deltaSeconds;
+      fighter.velocity.x = Math.min(fighter.velocity.x, targetSpeed);
+    } else {
+      const accel = (fighter.moveDirection.x === 0) ? fighter.deceleration : fighter.acceleration;
+      fighter.velocity.x -= accel * deltaSeconds;
+      fighter.velocity.x = Math.max(fighter.velocity.x, targetSpeed);
+    }
+
+    // Update facing direction based on movement (if moving)
+    if (fighter.moveDirection.x > 0) {
+      fighter.facingRight = true;
+      fighter.setFlipX(false);
+    } else if (fighter.moveDirection.x < 0) {
+      fighter.facingRight = false;
+      fighter.setFlipX(true);
+    }
   }
 
   exit(fighter) {

@@ -6,19 +6,32 @@ import FighterStateMachine from './FighterStateMachine.js';
  * Uses state machine for behavior management
  */
 export default class Fighter extends Phaser.GameObjects.Sprite {
-  constructor(scene, x, y, name = 'Fighter') {
-    // Create sprite (using placeholder for now)
-    super(scene, x, y, 'white');
+  constructor(scene, x, y, name = 'Fighter', fighterType = 'generic') {
+    // Determine sprite texture
+    const textureKey = `fighter_${fighterType}`;
+    const hasTexture = scene.textures.exists(textureKey);
+
+    // Create sprite (use spritesheet if available, fallback to placeholder)
+    super(scene, x, y, hasTexture ? textureKey : 'white');
 
     this.scene = scene;
     this.name = name;
+    this.fighterType = fighterType;
+    this.hasSprite = hasTexture;
 
-    // Visual setup (placeholder)
-    this.setDisplaySize(60, 160);
-    this.setOrigin(0.5, 1); // Bottom-center origin
+    // Visual setup
+    if (this.hasSprite) {
+      // Using actual spritesheet
+      this.setOrigin(0.5, 1); // Bottom-center origin
+      this.setScale(1.25); // Scale up from 128x128 to ~160px tall
+    } else {
+      // Using placeholder rectangle
+      this.setDisplaySize(60, 160);
+      this.setOrigin(0.5, 1); // Bottom-center origin
+    }
 
     // Fighter properties
-    this.fighterType = 'generic'; // Will be overridden by class-specific fighters
+    // fighterType already set above
     this.maxHP = 100;
     this.currentHP = 100;
     this.maxMeter = 100;
@@ -28,8 +41,18 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
     this.stats = {
       attack: 10,
       defense: 10,
-      speed: 200,
+      speed: 600, // High-speed movement for fast-paced combat
     };
+
+    // Physics
+    this.velocity = { x: 0, y: 0 };
+    this.acceleration = 2200; // Very responsive acceleration
+    this.deceleration = 2200; // Fast stopping to match acceleration
+    this.gravity = 1500; // Pixels per second squared
+    this.jumpForce = -600; // Negative = upward
+    this.groundY = y; // Remember ground position
+    this.isGrounded = true;
+    this.maxFallSpeed = 800;
 
     // State
     this.facingRight = true;
@@ -55,6 +78,27 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
    * @param {number} delta - Time since last frame (ms)
    */
   update(delta) {
+    const deltaSeconds = delta / 1000;
+
+    // Apply gravity
+    if (!this.isGrounded) {
+      this.velocity.y += this.gravity * deltaSeconds;
+      this.velocity.y = Math.min(this.velocity.y, this.maxFallSpeed);
+    }
+
+    // Apply velocity to position
+    this.x += this.velocity.x * deltaSeconds;
+    this.y += this.velocity.y * deltaSeconds;
+
+    // Ground check
+    if (this.y >= this.groundY) {
+      this.y = this.groundY;
+      this.velocity.y = 0;
+      this.isGrounded = true;
+    } else {
+      this.isGrounded = false;
+    }
+
     // Update state machine
     this.stateMachine.update(delta);
 
@@ -97,15 +141,14 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
   }
 
   /**
-   * Set movement direction
+   * Set movement direction (horizontal only)
    * @param {number} x - Horizontal direction (-1, 0, 1)
-   * @param {number} y - Vertical direction (-1, 0, 1)
    */
-  setMoveDirection(x, y) {
-    this.moveDirection = { x, y };
+  setMoveDirection(x) {
+    this.moveDirection.x = x;
 
-    if (x !== 0 || y !== 0) {
-      // Start moving if idle
+    if (x !== 0) {
+      // Start moving if idle and grounded
       if (this.stateMachine.isInState('idle')) {
         this.stateMachine.transition('moving');
       }
@@ -113,6 +156,59 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
       // Stop moving if currently moving
       if (this.stateMachine.isInState('moving')) {
         this.stateMachine.transition('idle');
+      }
+    }
+  }
+
+  /**
+   * Make fighter jump
+   */
+  jump() {
+    if (this.isGrounded && this.stateMachine.canAct()) {
+      this.velocity.y = this.jumpForce;
+      this.isGrounded = false;
+
+      // Play jump animation if available
+      if (this.anims) {
+        const animKey = `${this.fighterType}_jump`;
+        if (this.anims.exists(animKey)) {
+          this.anims.play(animKey, false);
+        }
+      }
+
+      console.log(`${this.name} jumps!`);
+    }
+  }
+
+  /**
+   * Handle collision with another fighter
+   * @param {Fighter} otherFighter - The fighter we're colliding with
+   */
+  handleCollision(otherFighter) {
+    // Calculate overlap
+    const thisLeft = this.x - this.displayWidth / 2;
+    const thisRight = this.x + this.displayWidth / 2;
+    const otherLeft = otherFighter.x - otherFighter.displayWidth / 2;
+    const otherRight = otherFighter.x + otherFighter.displayWidth / 2;
+
+    // Check if fighters are overlapping horizontally
+    if (thisRight > otherLeft && thisLeft < otherRight) {
+      // Calculate push direction and amount
+      const overlapLeft = thisRight - otherLeft;
+      const overlapRight = otherRight - thisLeft;
+      const overlap = Math.min(overlapLeft, overlapRight);
+
+      // Push fighters apart (split the overlap)
+      const pushAmount = overlap / 2;
+
+      if (this.x < otherFighter.x) {
+        // This fighter is on the left
+        this.x -= pushAmount;
+        otherFighter.x += pushAmount;
+      } else {
+        // This fighter is on the right
+        this.x += pushAmount;
+        otherFighter.x -= pushAmount;
       }
     }
   }

@@ -7,19 +7,32 @@ export default class IdleState extends State {
 
   enter(fighter) {
     super.enter(fighter);
-    fighter.setVelocity(0, 0);
+    // Velocity handled manually in Fighter class, not via physics
 
-    // Play idle animation
+    // Play idle animation (if available)
     if (fighter.anims) {
-      fighter.anims.play(`${fighter.fighterType}_idle`, true);
+      const animKey = `${fighter.fighterType}_idle`;
+      if (fighter.anims.exists(animKey)) {
+        fighter.anims.play(animKey, true);
+      }
     }
   }
 
   update(fighter, delta) {
     super.update(fighter, delta);
 
-    // Idle state can transition to any other state based on input
-    // This is the "neutral" state
+    // Apply deceleration in idle (smooth stop)
+    const deltaSeconds = delta / 1000;
+    if (Math.abs(fighter.velocity.x) > 5) {
+      const decel = fighter.deceleration * deltaSeconds;
+      if (fighter.velocity.x > 0) {
+        fighter.velocity.x = Math.max(0, fighter.velocity.x - decel);
+      } else {
+        fighter.velocity.x = Math.min(0, fighter.velocity.x + decel);
+      }
+    } else {
+      fighter.velocity.x = 0;
+    }
   }
 
   canTransitionTo(toState) {
