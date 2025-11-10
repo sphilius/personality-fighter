@@ -144,8 +144,11 @@ export default class FighterAI {
 
     switch (action) {
       case 'attack':
+        // Stop movement before attacking
+        this.fighter.setMoveDirection(0);
         this.performAttack(data);
         this.currentDecision = 'attacking';
+        console.log(`AI executing ${data} attack`);
         break;
 
       case 'block':
@@ -189,7 +192,10 @@ export default class FighterAI {
       // Move away from opponent
       const direction = this.opponent.x > this.fighter.x ? -1 : 1;
       this.fighter.setMoveDirection(direction);
-    } else if (this.currentDecision !== 'attacking' && this.currentDecision !== 'blocking') {
+    } else if (this.currentDecision === 'attacking') {
+      // Stop moving when attacking
+      this.fighter.setMoveDirection(0);
+    } else if (this.currentDecision !== 'blocking') {
       // Stop moving if not doing anything else
       this.fighter.setMoveDirection(0);
     }

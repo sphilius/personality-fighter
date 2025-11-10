@@ -138,18 +138,19 @@ export default class BootScene extends Phaser.Scene {
 
     // HEAVY ATTACK - char_blue_2.png, frames 22-29 (8 frames, critical attack)
     // Attack state: 12+5+15 = 32 frames @ 60fps = 0.533s
-    // Animation: 8 frames / 0.533s = 15 fps
+    // Animation: 8 frames / 0.533s = 15 fps (increased to 24 for smoother playback)
     anims.create({
       key: 'generic_heavy',
       frames: anims.generateFrameNumbers('fighter_generic_2', { start: 22, end: 29 }),
-      frameRate: 15,
+      frameRate: 24,
       repeat: 0,
     });
 
-    // BLOCK - char_blue_1.png, frames 61-63 (3 frames, shield defense)
+    // BLOCK - char_blue_1.png, frames 58-60 (3 frames, crouch animation)
+    // Using crouch instead of shield defense to keep character visible
     anims.create({
       key: 'generic_block',
-      frames: anims.generateFrameNumbers('fighter_generic_1', { start: 61, end: 63 }),
+      frames: anims.generateFrameNumbers('fighter_generic_1', { start: 58, end: 60 }),
       frameRate: 8,
       repeat: -1,
     });
