@@ -38,16 +38,24 @@ export default class BootScene extends Phaser.Scene {
     // Load fighter spritesheets
     // Note: These will fail gracefully if files don't exist yet
     // Fighter spritesheets should be in public/assets/fighters/
+    // This spritesheet format uses 56x56 frames and TWO files per character
 
-    // Generic fighter (placeholder/default)
-    this.load.spritesheet('fighter_generic', 'assets/fighters/fighter_generic.png', {
-      frameWidth: 128,
-      frameHeight: 128,
+    // Generic fighter (using Brullov's generic_char pack)
+    // File 1: idle, attack, run, jump, damage, death, spell, crouch, shield
+    this.load.spritesheet('fighter_generic_1', 'assets/fighters/char_blue_1.png', {
+      frameWidth: 56,
+      frameHeight: 56,
     });
 
-    // Future: Class-specific fighters
-    // this.load.spritesheet('fighter_paladin', 'assets/fighters/paladin.png', { frameWidth: 128, frameHeight: 128 });
-    // this.load.spritesheet('fighter_shadow_dancer', 'assets/fighters/shadow_dancer.png', { frameWidth: 128, frameHeight: 128 });
+    // File 2: walking, sliding, critical attack, ladder climbing
+    this.load.spritesheet('fighter_generic_2', 'assets/fighters/char_blue_2.png', {
+      frameWidth: 56,
+      frameHeight: 56,
+    });
+
+    // Future: Other color variants or class-specific fighters
+    // this.load.spritesheet('fighter_green_1', 'assets/fighters/char_green_1.png', { frameWidth: 56, frameHeight: 56 });
+    // this.load.spritesheet('fighter_green_2', 'assets/fighters/char_green_2.png', { frameWidth: 56, frameHeight: 56 });
 
     // Handle load errors gracefully
     this.load.on('loaderror', (file) => {
@@ -87,82 +95,86 @@ export default class BootScene extends Phaser.Scene {
   }
 
   createFighterAnimations() {
-    // Only create animations if the spritesheet loaded successfully
-    if (!this.textures.exists('fighter_generic')) {
-      console.warn('fighter_generic spritesheet not loaded - animations will be skipped');
+    // Check if spritesheets loaded successfully
+    const hasSheet1 = this.textures.exists('fighter_generic_1');
+    const hasSheet2 = this.textures.exists('fighter_generic_2');
+
+    if (!hasSheet1 || !hasSheet2) {
+      console.warn('Fighter spritesheets not loaded - animations will be skipped');
       return;
     }
 
-    // Animation configuration
-    // Assumes spritesheet layout (128x128 frames):
-    // Row 0 (frames 0-7): Idle animation
-    // Row 1 (frames 8-15): Walk animation
-    // Row 2 (frames 16-23): Light attack animation
-    // Row 3 (frames 24-31): Heavy attack animation
-    // Row 4 (frames 32-39): Block animation
-    // Row 5 (frames 40-47): Hit reaction animation
-    // Row 6 (frames 48-55): Downed animation
-    // Row 7 (frames 56-63): Jump animation
+    // Animation configuration for Brullov's generic_char pack
+    // Frame size: 56x56 pixels
+    // Layout: Irregular grid with different frame counts per animation
 
     const anims = this.anims;
 
-    // Generic fighter animations
+    // IDLE - char_blue_1.png, frames 0-5 (6 frames)
     anims.create({
       key: 'generic_idle',
-      frames: anims.generateFrameNumbers('fighter_generic', { start: 0, end: 7 }),
-      frameRate: 10,
+      frames: anims.generateFrameNumbers('fighter_generic_1', { start: 0, end: 5 }),
+      frameRate: 8,
       repeat: -1,
     });
 
+    // WALK - char_blue_2.png, frames 0-7 (8 frames)
     anims.create({
       key: 'generic_walk',
-      frames: anims.generateFrameNumbers('fighter_generic', { start: 8, end: 15 }),
-      frameRate: 12,
+      frames: anims.generateFrameNumbers('fighter_generic_2', { start: 0, end: 7 }),
+      frameRate: 10,
       repeat: -1,
     });
 
+    // LIGHT ATTACK - char_blue_1.png, frames 6-13 (8 frames)
     anims.create({
       key: 'generic_light',
-      frames: anims.generateFrameNumbers('fighter_generic', { start: 16, end: 23 }),
+      frames: anims.generateFrameNumbers('fighter_generic_1', { start: 6, end: 13 }),
       frameRate: 15,
       repeat: 0,
     });
 
+    // HEAVY ATTACK - char_blue_2.png, frames 22-29 (8 frames, critical attack)
     anims.create({
       key: 'generic_heavy',
-      frames: anims.generateFrameNumbers('fighter_generic', { start: 24, end: 31 }),
+      frames: anims.generateFrameNumbers('fighter_generic_2', { start: 22, end: 29 }),
       frameRate: 12,
       repeat: 0,
     });
 
+    // BLOCK - char_blue_1.png, frames 61-63 (3 frames, shield defense)
     anims.create({
       key: 'generic_block',
-      frames: anims.generateFrameNumbers('fighter_generic', { start: 32, end: 39 }),
-      frameRate: 10,
+      frames: anims.generateFrameNumbers('fighter_generic_1', { start: 61, end: 63 }),
+      frameRate: 8,
       repeat: -1,
     });
 
+    // HIT REACTION - char_blue_1.png, frames 38-41 (4 frames, taking damage)
     anims.create({
       key: 'generic_hit',
-      frames: anims.generateFrameNumbers('fighter_generic', { start: 40, end: 47 }),
+      frames: anims.generateFrameNumbers('fighter_generic_1', { start: 38, end: 41 }),
       frameRate: 15,
       repeat: 0,
     });
 
+    // DOWNED/DEATH - char_blue_1.png, frames 42-49 (8 frames)
     anims.create({
       key: 'generic_downed',
-      frames: anims.generateFrameNumbers('fighter_generic', { start: 48, end: 55 }),
+      frames: anims.generateFrameNumbers('fighter_generic_1', { start: 42, end: 49 }),
       frameRate: 10,
       repeat: 0,
     });
 
+    // JUMP - char_blue_1.png, frames 22-37 (16 frames, full jump sequence)
+    // Includes: jump prep, flying up, jumping reload, falling, landing
     anims.create({
       key: 'generic_jump',
-      frames: anims.generateFrameNumbers('fighter_generic', { start: 56, end: 63 }),
-      frameRate: 15,
+      frames: anims.generateFrameNumbers('fighter_generic_1', { start: 22, end: 37 }),
+      frameRate: 20,
       repeat: 0,
     });
 
-    console.log('Fighter animations created successfully');
+    console.log('Fighter animations created successfully (Brullov generic_char pack)');
   }
 }

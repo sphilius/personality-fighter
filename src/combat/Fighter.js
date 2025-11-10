@@ -7,8 +7,8 @@ import FighterStateMachine from './FighterStateMachine.js';
  */
 export default class Fighter extends Phaser.GameObjects.Sprite {
   constructor(scene, x, y, name = 'Fighter', fighterType = 'generic') {
-    // Determine sprite texture
-    const textureKey = `fighter_${fighterType}`;
+    // Determine sprite texture (checking for _1 file for two-file format)
+    const textureKey = `fighter_${fighterType}_1`;
     const hasTexture = scene.textures.exists(textureKey);
 
     // Create sprite (use spritesheet if available, fallback to placeholder)
@@ -21,9 +21,9 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
 
     // Visual setup
     if (this.hasSprite) {
-      // Using actual spritesheet
+      // Using actual spritesheet (56x56 frames from Brullov pack)
       this.setOrigin(0.5, 1); // Bottom-center origin
-      this.setScale(1.25); // Scale up from 128x128 to ~160px tall
+      this.setScale(2.5); // Scale up from 56x56 to ~140px tall
     } else {
       // Using placeholder rectangle
       this.setDisplaySize(60, 160);
