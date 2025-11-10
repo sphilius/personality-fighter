@@ -10,10 +10,10 @@ export default class MovingState extends State {
     super.enter(fighter);
 
     // Play walk/run animation (if available)
-    if (fighter.anims) {
+    if (fighter.scene && fighter.scene.anims) {
       const animKey = `${fighter.fighterType}_walk`;
-      if (fighter.anims.exists(animKey)) {
-        fighter.anims.play(animKey, true);
+      if (fighter.scene.anims.exists(animKey)) {
+        fighter.play(animKey, true);
       }
     }
   }

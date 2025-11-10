@@ -14,10 +14,10 @@ export default class DownedState extends State {
     fighter.isVulnerable = false; // Can't be hit while getting up
 
     // Play knockdown animation (if available)
-    if (fighter.anims) {
+    if (fighter.scene && fighter.scene.anims) {
       const animKey = `${fighter.fighterType}_downed`;
-      if (fighter.anims.exists(animKey)) {
-        fighter.anims.play(animKey, true);
+      if (fighter.scene.anims.exists(animKey)) {
+        fighter.play(animKey, true);
       }
     }
 

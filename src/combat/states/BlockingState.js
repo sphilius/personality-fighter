@@ -13,10 +13,10 @@ export default class BlockingState extends State {
     fighter.isBlocking = true;
 
     // Play block animation (if available)
-    if (fighter.anims) {
+    if (fighter.scene && fighter.scene.anims) {
       const animKey = `${fighter.fighterType}_block`;
-      if (fighter.anims.exists(animKey)) {
-        fighter.anims.play(animKey, true);
+      if (fighter.scene.anims.exists(animKey)) {
+        fighter.play(animKey, true);
       }
     }
 

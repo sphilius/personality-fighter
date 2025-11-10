@@ -117,14 +117,16 @@ export default class CombatTestScene extends Phaser.Scene {
       this.player.jump();
     });
 
-    // Test damage
+    // Test damage (knockback pushes fighter AWAY from opponent)
     this.keys.space.on('down', () => {
-      this.player.takeDamage(15, { x: 50, y: 0 });
+      // Player is on left, push them LEFT (negative x)
+      this.player.takeDamage(15, { x: -50, y: 0 });
     });
 
     // Test damage to opponent
     this.keys.o.on('down', () => {
-      this.opponent.takeDamage(15, { x: -50, y: 0 });
+      // Opponent is on right, push them RIGHT (positive x)
+      this.opponent.takeDamage(15, { x: 50, y: 0 });
     });
   }
 

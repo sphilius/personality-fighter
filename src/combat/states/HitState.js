@@ -24,10 +24,10 @@ export default class HitState extends State {
     }
 
     // Play hit animation (if available)
-    if (fighter.anims) {
+    if (fighter.scene && fighter.scene.anims) {
       const animKey = `${fighter.fighterType}_hit`;
-      if (fighter.anims.exists(animKey)) {
-        fighter.anims.play(animKey, true);
+      if (fighter.scene.anims.exists(animKey)) {
+        fighter.play(animKey, true);
       }
     }
 

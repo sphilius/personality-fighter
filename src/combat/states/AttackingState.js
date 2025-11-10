@@ -23,8 +23,10 @@ export default class AttackingState extends State {
     // Stop movement - handled manually in Fighter class
 
     // Play attack animation (if available)
-    if (fighter.anims && moveData.animationKey && fighter.anims.exists(moveData.animationKey)) {
-      fighter.anims.play(moveData.animationKey, true);
+    if (fighter.scene && fighter.scene.anims && moveData.animationKey) {
+      if (fighter.scene.anims.exists(moveData.animationKey)) {
+        fighter.play(moveData.animationKey, true);
+      }
     }
 
     console.log(`${fighter.name} attacking with ${moveData.name}: ${this.totalFrames} total frames`);

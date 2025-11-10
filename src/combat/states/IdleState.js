@@ -10,10 +10,10 @@ export default class IdleState extends State {
     // Velocity handled manually in Fighter class, not via physics
 
     // Play idle animation (if available)
-    if (fighter.anims) {
+    if (fighter.scene && fighter.scene.anims) {
       const animKey = `${fighter.fighterType}_idle`;
-      if (fighter.anims.exists(animKey)) {
-        fighter.anims.play(animKey, true);
+      if (fighter.scene.anims.exists(animKey)) {
+        fighter.play(animKey, true);
       }
     }
   }

@@ -24,6 +24,21 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
       // Using actual spritesheet (56x56 frames from Brullov pack)
       this.setOrigin(0.5, 1); // Bottom-center origin
       this.setScale(2.5); // Scale up from 56x56 to ~140px tall
+
+      // Set collision bounds (smaller than visual sprite for tighter combat)
+      // The sprite has lots of transparent space - use tighter hitbox
+      this.collisionWidth = 50; // Actual character is ~20px in 56px frame, scaled 2.5x
+      this.collisionHeight = 120; // Character height
+
+      // Play initial idle animation
+      this.on('addedtoscene', () => {
+        const animKey = `${this.fighterType}_idle`;
+        if (this.scene.anims.exists(animKey)) {
+          this.play(animKey);
+        } else {
+          console.warn(`Animation ${animKey} not found`);
+        }
+      });
     } else {
       // Using placeholder rectangle
       this.setDisplaySize(60, 160);
@@ -169,10 +184,10 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
       this.isGrounded = false;
 
       // Play jump animation if available
-      if (this.anims) {
+      if (this.scene && this.scene.anims) {
         const animKey = `${this.fighterType}_jump`;
-        if (this.anims.exists(animKey)) {
-          this.anims.play(animKey, false);
+        if (this.scene.anims.exists(animKey)) {
+          this.play(animKey, false);
         }
       }
 
@@ -185,11 +200,15 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
    * @param {Fighter} otherFighter - The fighter we're colliding with
    */
   handleCollision(otherFighter) {
+    // Use collision bounds (or fallback to display bounds for placeholders)
+    const thisWidth = this.collisionWidth || this.displayWidth || 60;
+    const otherWidth = otherFighter.collisionWidth || otherFighter.displayWidth || 60;
+
     // Calculate overlap
-    const thisLeft = this.x - this.displayWidth / 2;
-    const thisRight = this.x + this.displayWidth / 2;
-    const otherLeft = otherFighter.x - otherFighter.displayWidth / 2;
-    const otherRight = otherFighter.x + otherFighter.displayWidth / 2;
+    const thisLeft = this.x - thisWidth / 2;
+    const thisRight = this.x + thisWidth / 2;
+    const otherLeft = otherFighter.x - otherWidth / 2;
+    const otherRight = otherFighter.x + otherWidth / 2;
 
     // Check if fighters are overlapping horizontally
     if (thisRight > otherLeft && thisLeft < otherRight) {
