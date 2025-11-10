@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import Fighter from '../combat/Fighter.js';
+import FighterAI from '../combat/FighterAI.js';
 
 /**
  * Combat Test Scene
@@ -43,12 +44,15 @@ export default class CombatTestScene extends Phaser.Scene {
     this.roundActive = true;
     this.roundOverText = null;
 
+    // AI opponent
+    this.opponentAI = new FighterAI(this.opponent, this.player, 'intermediate');
+
     console.log('Combat Test Scene ready!');
   }
 
   createInstructions() {
     const instructions = [
-      'COMBAT STATE MACHINE TEST',
+      'COMBAT vs AI OPPONENT',
       '',
       'Controls:',
       'A/D - Move Left/Right',
@@ -56,10 +60,9 @@ export default class CombatTestScene extends Phaser.Scene {
       'J - Light Attack (10 dmg)',
       'K - Heavy Attack (25 dmg)',
       'L - Block (hold)',
-      'Space - Take Damage (test)',
-      'O - Damage Opponent (test)',
       'R - Restart Round',
       '',
+      'AI Difficulty: Intermediate',
       'First to 0 HP loses!',
     ];
 
@@ -166,6 +169,11 @@ export default class CombatTestScene extends Phaser.Scene {
     this.player.update(delta);
     this.opponent.update(delta);
 
+    // Update AI opponent (only if round is active)
+    if (this.roundActive && this.opponentAI) {
+      this.opponentAI.update(delta);
+    }
+
     // Handle body collision between fighters
     this.player.handleCollision(this.opponent);
 
@@ -213,6 +221,11 @@ export default class CombatTestScene extends Phaser.Scene {
     // Reset fighters
     this.player.reset();
     this.opponent.reset();
+
+    // Reset AI
+    if (this.opponentAI) {
+      this.opponentAI.reset();
+    }
 
     // Clear round over UI
     if (this.roundOverText) {
