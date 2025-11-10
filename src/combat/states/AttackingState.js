@@ -15,6 +15,7 @@ export default class AttackingState extends State {
 
     // Store move data
     this.currentMove = moveData;
+    fighter.currentAttack = moveData; // Store on fighter for hit detection
     this.startupFrames = moveData.frames.startup;
     this.activeFrames = moveData.frames.active;
     this.recoveryFrames = moveData.frames.recovery;
@@ -68,6 +69,7 @@ export default class AttackingState extends State {
     super.exit(fighter);
     fighter.hitboxActive = false;
     fighter.attackPhase = null;
+    fighter.currentAttack = null; // Clear attack data
     this.currentMove = null;
   }
 

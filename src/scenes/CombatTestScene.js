@@ -24,10 +24,10 @@ export default class CombatTestScene extends Phaser.Scene {
 
     // Create two fighters for testing
     this.player = new Fighter(this, width / 2 - 300, groundY, 'Player');
-    this.player.setTint(0x44ff44); // Green
+    this.player.setTeamTint(0x44ff44); // Green
 
     this.opponent = new Fighter(this, width / 2 + 300, groundY, 'Opponent');
-    this.opponent.setTint(0xff4444); // Red
+    this.opponent.setTeamTint(0xff4444); // Red
     this.opponent.facingRight = false;
     this.opponent.setFlipX(true);
 
@@ -176,6 +176,12 @@ export default class CombatTestScene extends Phaser.Scene {
 
     // Handle body collision between fighters
     this.player.handleCollision(this.opponent);
+
+    // Check for attack hits (only if round is active)
+    if (this.roundActive) {
+      this.player.checkAttackHit(this.opponent);
+      this.opponent.checkAttackHit(this.player);
+    }
 
     // Update state display
     this.updateStateDisplay();

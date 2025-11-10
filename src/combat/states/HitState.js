@@ -31,10 +31,10 @@ export default class HitState extends State {
       }
     }
 
-    // Visual feedback
+    // Visual feedback (red flash)
     fighter.setTint(0xff0000);
     fighter.scene.time.delayedCall(100, () => {
-      fighter.clearTint();
+      fighter.restoreTeamTint();
     });
 
     console.log(`${fighter.name} hit! Hitstun: ${this.hitstunDuration} frames, Knockback: ${JSON.stringify(this.knockback)}`);

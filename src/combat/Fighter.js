@@ -75,6 +75,10 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
     this.isVulnerable = true;
     this.hitboxActive = false;
     this.attackPhase = null; // 'startup', 'active', or 'recovery'
+    this.currentAttack = null; // Current attack move data
+
+    // Visual properties
+    this.teamTint = null; // Store team color tint (for restoring after hit flash)
 
     // Movement
     this.moveDirection = { x: 0, y: 0 };
@@ -344,6 +348,79 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
     this.currentHP = this.maxHP;
     this.currentMeter = 0;
     this.stateMachine.forceTransition('idle');
-    this.clearTint();
+    this.restoreTeamTint();
+  }
+
+  /**
+   * Set team color tint (and remember it)
+   * @param {number} color - Hex color code
+   */
+  setTeamTint(color) {
+    this.teamTint = color;
+    this.setTint(color);
+  }
+
+  /**
+   * Restore team color tint after effects
+   */
+  restoreTeamTint() {
+    if (this.teamTint !== null) {
+      this.setTint(this.teamTint);
+    } else {
+      this.clearTint();
+    }
+  }
+
+  /**
+   * Check if this fighter's attack hits another fighter
+   * @param {Fighter} otherFighter - The fighter to check against
+   * @returns {boolean} - True if hit connects
+   */
+  checkAttackHit(otherFighter) {
+    // Only check if this fighter has an active hitbox
+    if (!this.hitboxActive || !this.currentAttack) {
+      return false;
+    }
+
+    // Don't hit fighters who aren't vulnerable
+    if (!otherFighter.isVulnerable) {
+      return false;
+    }
+
+    // Calculate attack hitbox position
+    const attackRange = 80; // How far the attack reaches
+    const attackWidth = 60;
+
+    // Attack direction based on facing
+    const attackX = this.facingRight ? this.x + attackRange/2 : this.x - attackRange/2;
+    const hitboxLeft = attackX - attackWidth/2;
+    const hitboxRight = attackX + attackWidth/2;
+
+    // Calculate opponent hurtbox
+    const hurtboxWidth = otherFighter.collisionWidth || 50;
+    const hurtboxLeft = otherFighter.x - hurtboxWidth/2;
+    const hurtboxRight = otherFighter.x + hurtboxWidth/2;
+
+    // Check overlap
+    const hits = hitboxRight > hurtboxLeft && hitboxLeft < hurtboxRight;
+
+    if (hits) {
+      // Calculate knockback direction
+      const knockbackDirection = this.facingRight ? 1 : -1;
+      const knockbackAmount = this.currentAttack.damage * 3; // Knockback scales with damage
+
+      // Apply damage with knockback
+      otherFighter.takeDamage(this.currentAttack.damage, {
+        x: knockbackDirection * knockbackAmount,
+        y: 0
+      });
+
+      // Deactivate hitbox so we don't hit multiple times
+      this.hitboxActive = false;
+
+      return true;
+    }
+
+    return false;
   }
 }
