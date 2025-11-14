@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import Fighter from '../combat/Fighter.js';
+import CollisionSystem from '../combat/CollisionSystem.js';
+import TouchControls from '../combat/TouchControls.js';
 
 /**
  * Combat Test Scene
@@ -39,6 +41,14 @@ export default class CombatTestScene extends Phaser.Scene {
     // State display
     this.createStateDisplay();
 
+    // Collision system
+    this.collisionSystem = new CollisionSystem(this, this.player, this.opponent);
+    this.collisionSystem.setDebugMode(false); // Toggle with H key
+
+    // Touch controls (optional - toggle with T key)
+    this.touchControls = new TouchControls(this, this.player);
+    this.touchEnabled = false; // Start with keyboard controls
+
     // Round management
     this.roundActive = true;
     this.roundOverText = null;
@@ -50,14 +60,20 @@ export default class CombatTestScene extends Phaser.Scene {
     const instructions = [
       'COMBAT STATE MACHINE TEST',
       '',
-      'Controls:',
+      'Keyboard Controls:',
       'A/D - Move Left/Right',
       'W - Jump',
       'J - Light Attack (10 dmg)',
       'K - Heavy Attack (25 dmg)',
       'L - Block (hold)',
-      'Space - Take Damage (test)',
-      'O - Damage Opponent (test)',
+      '',
+      'Touch Controls (T to toggle):',
+      'Left: Virtual joystick',
+      'Right: Tap/Swipe to attack',
+      '',
+      'Debug:',
+      'H - Toggle Hitbox Debug',
+      'T - Toggle Touch/Keyboard',
       'R - Restart Round',
       '',
       'First to 0 HP loses!',
@@ -81,40 +97,54 @@ export default class CombatTestScene extends Phaser.Scene {
       j: this.input.keyboard.addKey('J'),
       k: this.input.keyboard.addKey('K'),
       l: this.input.keyboard.addKey('L'),
+      h: this.input.keyboard.addKey('H'),
+      t: this.input.keyboard.addKey('T'),
       o: this.input.keyboard.addKey('O'),
       space: this.input.keyboard.addKey('SPACE'),
     };
 
-    // Attack on key press
+    // Attack on key press (only in keyboard mode)
     this.keys.j.on('down', () => {
-      this.player.attack({
-        name: 'Light Attack',
-        damage: 10,
-        frames: { startup: 5, active: 3, recovery: 7 },
-        animationKey: 'generic_light',
-      });
+      if (!this.touchEnabled) {
+        this.player.attack({
+          name: 'Light Attack',
+          damage: 10,
+          frames: { startup: 5, active: 3, recovery: 7 },
+          animationKey: 'generic_light',
+          hitbox: { x: 50, y: -60, width: 60, height: 50 }, // Forward punch hitbox
+        });
+      }
     });
 
     this.keys.k.on('down', () => {
-      this.player.attack({
-        name: 'Heavy Attack',
-        damage: 25,
-        frames: { startup: 12, active: 5, recovery: 15 },
-        animationKey: 'generic_heavy',
-      });
+      if (!this.touchEnabled) {
+        this.player.attack({
+          name: 'Heavy Attack',
+          damage: 25,
+          frames: { startup: 12, active: 5, recovery: 15 },
+          animationKey: 'generic_heavy',
+          hitbox: { x: 60, y: -80, width: 80, height: 70 }, // Larger kick hitbox
+        });
+      }
     });
 
     this.keys.l.on('down', () => {
-      this.player.startBlock();
+      if (!this.touchEnabled) {
+        this.player.startBlock();
+      }
     });
 
     this.keys.l.on('up', () => {
-      this.player.stopBlock();
+      if (!this.touchEnabled) {
+        this.player.stopBlock();
+      }
     });
 
-    // Jump on W key
+    // Jump on W key (only in keyboard mode)
     this.keys.w.on('down', () => {
-      this.player.jump();
+      if (!this.touchEnabled) {
+        this.player.jump();
+      }
     });
 
     // Test damage
@@ -125,6 +155,18 @@ export default class CombatTestScene extends Phaser.Scene {
     // Test damage to opponent
     this.keys.o.on('down', () => {
       this.opponent.takeDamage(15, { x: -50, y: 0 });
+    });
+
+    // Toggle hitbox debug
+    this.keys.h.on('down', () => {
+      this.collisionSystem.setDebugMode(!this.collisionSystem.debugMode);
+      console.log(`Hitbox debug: ${this.collisionSystem.debugMode ? 'ON' : 'OFF'}`);
+    });
+
+    // Toggle touch controls
+    this.keys.t.on('down', () => {
+      this.touchEnabled = !this.touchEnabled;
+      console.log(`Controls: ${this.touchEnabled ? 'TOUCH' : 'KEYBOARD'}`);
     });
   }
 
@@ -150,8 +192,8 @@ export default class CombatTestScene extends Phaser.Scene {
       }
     }
 
-    // Handle movement input (only if round is active)
-    if (this.roundActive) {
+    // Handle movement input (only if round is active and keyboard mode)
+    if (this.roundActive && !this.touchEnabled) {
       let moveX = 0;
 
       if (this.keys.a.isDown) moveX = -1;
@@ -166,6 +208,11 @@ export default class CombatTestScene extends Phaser.Scene {
 
     // Handle body collision between fighters
     this.player.handleCollision(this.opponent);
+
+    // Update collision detection (hitbox/hurtbox)
+    if (this.roundActive) {
+      this.collisionSystem.update();
+    }
 
     // Update state display
     this.updateStateDisplay();
