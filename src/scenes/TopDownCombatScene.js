@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import Fighter from '../combat/Fighter.js';
 import ProjectileManager from '../systems/ProjectileManager.js';
 import WaveManager from '../systems/WaveManager.js';
+import XPOrbManager from '../systems/XPOrbManager.js';
 
 /**
  * TopDownCombatScene - Main combat arena for top-down action RPG gameplay
@@ -32,6 +33,7 @@ export default class TopDownCombatScene extends Phaser.Scene {
     // Initialize game systems
     this.projectileManager = new ProjectileManager(this, 100);
     this.waveManager = new WaveManager(this);
+    this.xpOrbManager = new XPOrbManager(this, 50);
 
     // Setup camera
     this.setupCamera();
@@ -185,8 +187,30 @@ export default class TopDownCombatScene extends Phaser.Scene {
 
     uiContainer.add([this.hpBarBg, this.hpBarFill, this.hpText]);
 
+    // XP bar
+    const xpBarY = hpBarY + hpBarHeight + 10;
+    this.xpBarBg = this.add.rectangle(hpBarX, xpBarY, hpBarWidth, 15, 0x000000, 0.7)
+      .setOrigin(0, 0);
+
+    this.xpBarFill = this.add.rectangle(hpBarX + 2, xpBarY + 2, hpBarWidth - 4, 11, 0xffaa00)
+      .setOrigin(0, 0);
+
+    this.xpText = this.add.text(hpBarX + hpBarWidth / 2, xpBarY + 7.5, '', {
+      fontSize: '10px',
+      color: '#ffffff'
+    }).setOrigin(0.5);
+
+    uiContainer.add([this.xpBarBg, this.xpBarFill, this.xpText]);
+
+    // Level display
+    this.levelText = this.add.text(20, 50, '', {
+      fontSize: '16px',
+      color: '#ffaa00',
+      fontStyle: 'bold'
+    }).setOrigin(0, 0).setScrollFactor(0).setDepth(100);
+
     // Class name
-    this.classText = this.add.text(20, 50, `Class: ${this.playerClass.toUpperCase()}`, {
+    this.classText = this.add.text(20, 70, `Class: ${this.playerClass.toUpperCase()}`, {
       fontSize: '14px',
       color: '#00ff88'
     }).setOrigin(0, 0).setScrollFactor(0).setDepth(100);
@@ -211,7 +235,7 @@ export default class TopDownCombatScene extends Phaser.Scene {
     }).setOrigin(0, 1).setScrollFactor(0).setDepth(100);
 
     // Debug position text
-    this.debugText = this.add.text(20, 80, '', {
+    this.debugText = this.add.text(20, 95, '', {
       fontSize: '10px',
       color: '#666666'
     }).setOrigin(0, 0).setScrollFactor(0).setDepth(100);
@@ -221,7 +245,40 @@ export default class TopDownCombatScene extends Phaser.Scene {
     // Listen for enemy killed event
     this.events.on('enemy-killed', (data) => {
       console.log('Enemy killed! XP:', data.xpValue);
-      // Future: Spawn XP orb here
+
+      // Spawn XP orb at enemy position
+      this.xpOrbManager.spawn({
+        x: data.x,
+        y: data.y,
+        xpValue: data.xpValue
+      });
+    });
+
+    // Listen for XP collection
+    this.events.on('xp-collected', (data) => {
+      const leveledUp = this.player.gainXP(data.xpValue);
+
+      // Show +XP text
+      this.showFloatingText(data.x, data.y, `+${data.xpValue} XP`, '#ffaa00');
+
+      if (leveledUp) {
+        // Don't show anything here, player-level-up event handles it
+      }
+    });
+
+    // Listen for level up
+    this.events.on('player-level-up', (data) => {
+      console.log(`Player leveled up to ${data.level}!`);
+
+      // Pause combat scene
+      this.scene.pause();
+
+      // Launch level up scene
+      this.scene.launch('LevelUpScene', {
+        level: data.level,
+        playerClass: this.playerClass,
+        parentScene: this
+      });
     });
 
     // Listen for wave events
@@ -231,6 +288,12 @@ export default class TopDownCombatScene extends Phaser.Scene {
 
     this.events.on('wave-complete', (waveNum) => {
       this.showWaveText(`Wave ${waveNum} Complete!`);
+
+      // Heal player with regen if they have it
+      if (this.player.hasRegen) {
+        this.player.heal(5);
+        this.showFloatingText(this.player.x, this.player.y - 40, '+5 HP', '#00ff88');
+      }
     });
   }
 
@@ -253,6 +316,27 @@ export default class TopDownCombatScene extends Phaser.Scene {
       y: centerY - 50,
       duration: 2000,
       onComplete: () => waveText.destroy()
+    });
+  }
+
+  showFloatingText(x, y, text, color = '#ffffff') {
+    // Create floating text at world position
+    const floatingText = this.add.text(x, y, text, {
+      fontSize: '18px',
+      color: color,
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 4
+    }).setOrigin(0.5).setDepth(200);
+
+    // Float up and fade out
+    this.tweens.add({
+      targets: floatingText,
+      y: y - 50,
+      alpha: 0,
+      duration: 1000,
+      ease: 'Power2',
+      onComplete: () => floatingText.destroy()
     });
   }
 
@@ -279,6 +363,9 @@ export default class TopDownCombatScene extends Phaser.Scene {
 
     // Update projectiles
     this.projectileManager.update(delta);
+
+    // Update XP orbs
+    this.xpOrbManager.update(delta, this.player);
 
     // Player auto-attack
     this.player.tryAutoAttack((config) => {
@@ -361,6 +448,14 @@ export default class TopDownCombatScene extends Phaser.Scene {
     this.hpBarFill.width = (200 - 4) * hpPercent;
     this.hpText.setText(`HP: ${Math.ceil(this.player.currentHP)}/${this.player.maxHP}`);
 
+    // Update XP bar
+    const xpPercent = this.player.getXPProgress() / 100;
+    this.xpBarFill.width = (200 - 4) * xpPercent;
+    this.xpText.setText(`XP: ${this.player.currentXP}/${this.player.xpToNextLevel}`);
+
+    // Update level
+    this.levelText.setText(`Level ${this.player.level}`);
+
     // Update wave info
     const wave = this.waveManager.getCurrentWave();
     const enemyCount = this.waveManager.getEnemies().length;
@@ -369,12 +464,13 @@ export default class TopDownCombatScene extends Phaser.Scene {
 
     // Update debug text
     const projectileCount = this.projectileManager.getActiveProjectiles().length;
+    const xpOrbCount = this.xpOrbManager.getActiveOrbs().length;
     this.debugText.setText(
       `Pos: (${Math.floor(this.player.x)}, ${Math.floor(this.player.y)})\n` +
       `Vel: (${Math.floor(this.player.velocity.x)}, ${Math.floor(this.player.velocity.y)})\n` +
       `State: ${this.player.stateMachine.getCurrentState()}\n` +
       `Facing: ${Math.floor(Phaser.Math.RadToDeg(this.player.facingAngle))}°\n` +
-      `Projectiles: ${projectileCount}`
+      `Projectiles: ${projectileCount} | XP Orbs: ${xpOrbCount}`
     );
   }
 }

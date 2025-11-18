@@ -72,6 +72,12 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
     this.autoAttackRange = 600;
     this.autoAttackSpeed = 800;
 
+    // XP and Leveling
+    this.level = 1;
+    this.currentXP = 0;
+    this.xpToNextLevel = 100;
+    this.xpMultiplier = 1.5; // Each level requires 50% more XP
+
     // Initialize state machine
     this.stateMachine = new FighterStateMachine(this);
 
@@ -361,6 +367,53 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
    */
   heal(amount) {
     this.currentHP = Math.min(this.maxHP, this.currentHP + amount);
+  }
+
+  /**
+   * Gain XP
+   * @param {number} amount - Amount of XP to gain
+   * @returns {boolean} - True if leveled up
+   */
+  gainXP(amount) {
+    this.currentXP += amount;
+
+    // Check if leveled up
+    if (this.currentXP >= this.xpToNextLevel) {
+      this.levelUp();
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Level up
+   */
+  levelUp() {
+    this.level++;
+    this.currentXP -= this.xpToNextLevel;
+
+    // Calculate next level requirement
+    this.xpToNextLevel = Math.floor(this.xpToNextLevel * this.xpMultiplier);
+
+    // Emit level up event
+    this.scene.events.emit('player-level-up', {
+      level: this.level,
+      player: this
+    });
+
+    console.log(`${this.name} leveled up to ${this.level}!`);
+
+    // Heal a bit on level up
+    this.heal(20);
+  }
+
+  /**
+   * Get XP progress as percentage
+   * @returns {number} - 0-100
+   */
+  getXPProgress() {
+    return (this.currentXP / this.xpToNextLevel) * 100;
   }
 
   /**
