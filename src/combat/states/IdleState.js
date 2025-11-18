@@ -21,17 +21,30 @@ export default class IdleState extends State {
   update(fighter, delta) {
     super.update(fighter, delta);
 
-    // Apply deceleration in idle (smooth stop)
+    // Apply friction in idle (smooth stop on both axes)
     const deltaSeconds = delta / 1000;
+    const friction = fighter.friction * deltaSeconds;
+
+    // X axis friction
     if (Math.abs(fighter.velocity.x) > 5) {
-      const decel = fighter.deceleration * deltaSeconds;
       if (fighter.velocity.x > 0) {
-        fighter.velocity.x = Math.max(0, fighter.velocity.x - decel);
+        fighter.velocity.x = Math.max(0, fighter.velocity.x - friction);
       } else {
-        fighter.velocity.x = Math.min(0, fighter.velocity.x + decel);
+        fighter.velocity.x = Math.min(0, fighter.velocity.x + friction);
       }
     } else {
       fighter.velocity.x = 0;
+    }
+
+    // Y axis friction
+    if (Math.abs(fighter.velocity.y) > 5) {
+      if (fighter.velocity.y > 0) {
+        fighter.velocity.y = Math.max(0, fighter.velocity.y - friction);
+      } else {
+        fighter.velocity.y = Math.min(0, fighter.velocity.y + friction);
+      }
+    } else {
+      fighter.velocity.y = 0;
     }
   }
 

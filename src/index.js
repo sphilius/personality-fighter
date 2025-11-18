@@ -5,6 +5,7 @@ import IntroScene from './scenes/IntroScene.js';
 import AssessmentScene from './scenes/AssessmentScene.js';
 import ResultsScene from './scenes/ResultsScene.js';
 import CombatTestScene from './scenes/CombatTestScene.js';
+import TopDownCombatScene from './scenes/TopDownCombatScene.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -22,7 +23,7 @@ const config = {
       debug: false,
     },
   },
-  scene: [BootScene, MainMenuScene, IntroScene, AssessmentScene, ResultsScene, CombatTestScene],
+  scene: [BootScene, MainMenuScene, IntroScene, AssessmentScene, ResultsScene, CombatTestScene, TopDownCombatScene],
   backgroundColor: '#000000',
 };
 

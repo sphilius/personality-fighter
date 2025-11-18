@@ -475,13 +475,14 @@ export default class ResultsScene extends Phaser.Scene {
   continueToGame() {
     this.cameras.main.fadeOut(1000, 0, 0, 0);
     this.time.delayedCall(1000, () => {
-      // For now, restart to intro (later this will go to main menu/game)
       console.log('Assessment complete! Assigned class:', this.result.abilityClass);
       console.log('HEXACO scores:', this.result.hexaco);
 
-      // In a full implementation, this would go to main menu or character select
-      // For now, show completion message
-      this.scene.start('BootScene');
+      // Start the top-down combat scene with player class
+      this.scene.start('TopDownCombatScene', {
+        playerClass: this.result.abilityClass,
+        personalityScores: this.result.hexaco
+      });
     });
   }
 }

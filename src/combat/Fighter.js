@@ -44,25 +44,25 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
       speed: 600, // High-speed movement for fast-paced combat
     };
 
-    // Physics
+    // Physics (Top-down, no gravity)
     this.velocity = { x: 0, y: 0 };
     this.acceleration = 2200; // Very responsive acceleration
-    this.deceleration = 2200; // Fast stopping to match acceleration
-    this.gravity = 1500; // Pixels per second squared
-    this.jumpForce = -600; // Negative = upward
-    this.groundY = y; // Remember ground position
-    this.isGrounded = true;
-    this.maxFallSpeed = 800;
+    this.friction = 2200; // Deceleration when no input
+    this.maxSpeed = 600; // Maximum movement speed
 
     // State
-    this.facingRight = true;
+    this.facingAngle = 0; // Radians, 0 = right
+    this.facingRight = true; // For sprite flipping (legacy)
     this.isBlocking = false;
     this.isVulnerable = true;
     this.hitboxActive = false;
     this.attackPhase = null; // 'startup', 'active', or 'recovery'
 
-    // Movement
+    // Movement (8-directional)
     this.moveDirection = { x: 0, y: 0 };
+
+    // Mouse aim
+    this.mouseAim = false; // Whether to use mouse for facing direction
 
     // Initialize state machine
     this.stateMachine = new FighterStateMachine(this);
@@ -80,24 +80,9 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
   update(delta) {
     const deltaSeconds = delta / 1000;
 
-    // Apply gravity
-    if (!this.isGrounded) {
-      this.velocity.y += this.gravity * deltaSeconds;
-      this.velocity.y = Math.min(this.velocity.y, this.maxFallSpeed);
-    }
-
-    // Apply velocity to position
+    // Apply velocity to position (top-down, no gravity)
     this.x += this.velocity.x * deltaSeconds;
     this.y += this.velocity.y * deltaSeconds;
-
-    // Ground check
-    if (this.y >= this.groundY) {
-      this.y = this.groundY;
-      this.velocity.y = 0;
-      this.isGrounded = true;
-    } else {
-      this.isGrounded = false;
-    }
 
     // Update state machine
     this.stateMachine.update(delta);
@@ -141,14 +126,18 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
   }
 
   /**
-   * Set movement direction (horizontal only)
+   * Set movement direction (8-directional)
    * @param {number} x - Horizontal direction (-1, 0, 1)
+   * @param {number} y - Vertical direction (-1, 0, 1)
    */
-  setMoveDirection(x) {
+  setMoveDirection(x, y = 0) {
     this.moveDirection.x = x;
+    this.moveDirection.y = y;
 
-    if (x !== 0) {
-      // Start moving if idle and grounded
+    const isMoving = x !== 0 || y !== 0;
+
+    if (isMoving) {
+      // Start moving if idle
       if (this.stateMachine.isInState('idle')) {
         this.stateMachine.transition('moving');
       }
@@ -161,22 +150,38 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
   }
 
   /**
-   * Make fighter jump
+   * Set facing direction based on mouse position
+   * @param {number} mouseX - Mouse X in world coordinates
+   * @param {number} mouseY - Mouse Y in world coordinates
    */
-  jump() {
-    if (this.isGrounded && this.stateMachine.canAct()) {
-      this.velocity.y = this.jumpForce;
-      this.isGrounded = false;
+  setFacingFromMouse(mouseX, mouseY) {
+    const angle = Phaser.Math.Angle.Between(this.x, this.y, mouseX, mouseY);
+    this.setFacingAngle(angle);
+  }
 
-      // Play jump animation if available
-      if (this.anims) {
-        const animKey = `${this.fighterType}_jump`;
-        if (this.anims.exists(animKey)) {
-          this.anims.play(animKey, false);
-        }
-      }
+  /**
+   * Set facing angle directly
+   * @param {number} angle - Angle in radians
+   */
+  setFacingAngle(angle) {
+    this.facingAngle = angle;
 
-      console.log(`${this.name} jumps!`);
+    // Update legacy facingRight for sprite flipping
+    // Consider "right" to be -90° to +90° (right half of circle)
+    const degrees = Phaser.Math.RadToDeg(angle);
+    this.facingRight = degrees >= -90 && degrees <= 90;
+    this.setFlipX(!this.facingRight);
+  }
+
+  /**
+   * Set facing direction based on movement
+   * @param {number} x - X direction
+   * @param {number} y - Y direction
+   */
+  setFacingFromMovement(x, y) {
+    if (x !== 0 || y !== 0) {
+      const angle = Math.atan2(y, x);
+      this.setFacingAngle(angle);
     }
   }
 

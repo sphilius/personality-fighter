@@ -22,37 +22,54 @@ export default class MovingState extends State {
     super.update(fighter, delta);
 
     const deltaSeconds = delta / 1000;
-    const targetSpeed = fighter.stats.speed * fighter.moveDirection.x;
 
-    // Accelerate/decelerate toward target speed (snappier movement)
-    if (Math.abs(targetSpeed - fighter.velocity.x) < 10) {
-      // Close enough, snap to target
-      fighter.velocity.x = targetSpeed;
-    } else if (targetSpeed > fighter.velocity.x) {
-      // Accelerate right
-      fighter.velocity.x += fighter.acceleration * deltaSeconds;
-      fighter.velocity.x = Math.min(fighter.velocity.x, targetSpeed);
-    } else {
-      // Accelerate left or decelerate
-      const accel = (fighter.moveDirection.x === 0) ? fighter.deceleration : fighter.acceleration;
-      fighter.velocity.x -= accel * deltaSeconds;
-      fighter.velocity.x = Math.max(fighter.velocity.x, targetSpeed);
+    // Normalize diagonal movement (8-directional)
+    let dirX = fighter.moveDirection.x;
+    let dirY = fighter.moveDirection.y;
+    const magnitude = Math.sqrt(dirX * dirX + dirY * dirY);
+
+    if (magnitude > 0) {
+      dirX /= magnitude;
+      dirY /= magnitude;
     }
 
-    // Update facing direction
-    if (fighter.moveDirection.x > 0) {
-      fighter.facingRight = true;
-      fighter.setFlipX(false);
-    } else if (fighter.moveDirection.x < 0) {
-      fighter.facingRight = false;
-      fighter.setFlipX(true);
+    // Calculate target velocity
+    const targetVelocityX = fighter.stats.speed * dirX;
+    const targetVelocityY = fighter.stats.speed * dirY;
+
+    // Accelerate toward target velocity (X axis)
+    if (Math.abs(targetVelocityX - fighter.velocity.x) < 10) {
+      fighter.velocity.x = targetVelocityX;
+    } else if (targetVelocityX > fighter.velocity.x) {
+      fighter.velocity.x += fighter.acceleration * deltaSeconds;
+      fighter.velocity.x = Math.min(fighter.velocity.x, targetVelocityX);
+    } else {
+      fighter.velocity.x -= fighter.acceleration * deltaSeconds;
+      fighter.velocity.x = Math.max(fighter.velocity.x, targetVelocityX);
+    }
+
+    // Accelerate toward target velocity (Y axis)
+    if (Math.abs(targetVelocityY - fighter.velocity.y) < 10) {
+      fighter.velocity.y = targetVelocityY;
+    } else if (targetVelocityY > fighter.velocity.y) {
+      fighter.velocity.y += fighter.acceleration * deltaSeconds;
+      fighter.velocity.y = Math.min(fighter.velocity.y, targetVelocityY);
+    } else {
+      fighter.velocity.y -= fighter.acceleration * deltaSeconds;
+      fighter.velocity.y = Math.max(fighter.velocity.y, targetVelocityY);
+    }
+
+    // Update facing direction based on movement (if not using mouse aim)
+    if (!fighter.mouseAim && magnitude > 0) {
+      fighter.setFacingFromMovement(dirX, dirY);
     }
   }
 
   exit(fighter) {
     super.exit(fighter);
-    // Apply deceleration when stopping
+    // Reset move direction when stopping
     fighter.moveDirection.x = 0;
+    fighter.moveDirection.y = 0;
   }
 
   canTransitionTo(toState) {
