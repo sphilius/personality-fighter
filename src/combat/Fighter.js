@@ -64,6 +64,14 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
     // Mouse aim
     this.mouseAim = false; // Whether to use mouse for facing direction
 
+    // Auto-attack (Vampire Survivors style)
+    this.autoAttackEnabled = false;
+    this.autoAttackCooldown = 1000; // ms between attacks
+    this.autoAttackTimer = 0;
+    this.autoAttackDamage = 10;
+    this.autoAttackRange = 600;
+    this.autoAttackSpeed = 800;
+
     // Initialize state machine
     this.stateMachine = new FighterStateMachine(this);
 
@@ -87,8 +95,40 @@ export default class Fighter extends Phaser.GameObjects.Sprite {
     // Update state machine
     this.stateMachine.update(delta);
 
+    // Update auto-attack timer
+    if (this.autoAttackEnabled) {
+      this.autoAttackTimer += delta;
+    }
+
     // Keep fighter on screen
     this.constrainToScreen();
+  }
+
+  /**
+   * Attempt to auto-attack (Vampire Survivors style)
+   * @param {Function} fireCallback - Callback to fire projectile
+   * @returns {boolean} - True if attack was fired
+   */
+  tryAutoAttack(fireCallback) {
+    if (!this.autoAttackEnabled) return false;
+    if (this.autoAttackTimer < this.autoAttackCooldown) return false;
+
+    // Reset timer
+    this.autoAttackTimer = 0;
+
+    // Fire projectile in facing direction
+    if (fireCallback) {
+      fireCallback({
+        x: this.x,
+        y: this.y,
+        angle: this.facingAngle,
+        damage: this.autoAttackDamage,
+        speed: this.autoAttackSpeed,
+        owner: 'player'
+      });
+    }
+
+    return true;
   }
 
   /**

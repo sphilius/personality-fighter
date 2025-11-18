@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
 import Fighter from '../combat/Fighter.js';
+import ProjectileManager from '../systems/ProjectileManager.js';
+import WaveManager from '../systems/WaveManager.js';
 
 /**
  * TopDownCombatScene - Main combat arena for top-down action RPG gameplay
- * Handles player movement, camera, and will host wave-based combat
+ * Handles player movement, camera, and wave-based combat
  */
 export default class TopDownCombatScene extends Phaser.Scene {
   constructor() {
@@ -27,6 +29,10 @@ export default class TopDownCombatScene extends Phaser.Scene {
     // Create player at center
     this.createPlayer(width / 2, height / 2);
 
+    // Initialize game systems
+    this.projectileManager = new ProjectileManager(this, 100);
+    this.waveManager = new WaveManager(this);
+
     // Setup camera
     this.setupCamera();
 
@@ -35,6 +41,14 @@ export default class TopDownCombatScene extends Phaser.Scene {
 
     // UI
     this.createUI();
+
+    // Setup event listeners
+    this.setupEventListeners();
+
+    // Start first wave after a delay
+    this.time.delayedCall(2000, () => {
+      this.waveManager.startWave();
+    });
 
     console.log('TopDownCombatScene: Ready for combat!');
   }
@@ -93,6 +107,11 @@ export default class TopDownCombatScene extends Phaser.Scene {
     this.player = new Fighter(this, x, y, 'Player', this.playerClass);
     this.player.mouseAim = true; // Enable mouse aiming
     this.player.setTint(0x00ff88); // Player color
+
+    // Enable auto-attack (Vampire Survivors style)
+    this.player.autoAttackEnabled = true;
+    this.player.autoAttackCooldown = 500; // 0.5 seconds
+    this.player.autoAttackDamage = 15;
 
     // Visual placeholder (will be replaced with sprites)
     if (!this.player.hasSprite) {
@@ -172,9 +191,21 @@ export default class TopDownCombatScene extends Phaser.Scene {
       color: '#00ff88'
     }).setOrigin(0, 0).setScrollFactor(0).setDepth(100);
 
+    // Wave info
+    this.waveText = this.add.text(this.cameras.main.width - 20, 20, '', {
+      fontSize: '18px',
+      color: '#ffaa00',
+      fontStyle: 'bold'
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(100);
+
+    this.enemyCountText = this.add.text(this.cameras.main.width - 20, 45, '', {
+      fontSize: '14px',
+      color: '#ff4444'
+    }).setOrigin(1, 0).setScrollFactor(0).setDepth(100);
+
     // Controls hint
     this.controlsText = this.add.text(20, this.cameras.main.height - 60,
-      'WASD: Move | Mouse: Aim | ESC: Menu', {
+      'WASD: Move | Mouse: Aim | Shoot automatically | ESC: Menu', {
       fontSize: '12px',
       color: '#888888'
     }).setOrigin(0, 1).setScrollFactor(0).setDepth(100);
@@ -184,6 +215,45 @@ export default class TopDownCombatScene extends Phaser.Scene {
       fontSize: '10px',
       color: '#666666'
     }).setOrigin(0, 0).setScrollFactor(0).setDepth(100);
+  }
+
+  setupEventListeners() {
+    // Listen for enemy killed event
+    this.events.on('enemy-killed', (data) => {
+      console.log('Enemy killed! XP:', data.xpValue);
+      // Future: Spawn XP orb here
+    });
+
+    // Listen for wave events
+    this.events.on('wave-start', (waveNum) => {
+      this.showWaveText(`Wave ${waveNum}`);
+    });
+
+    this.events.on('wave-complete', (waveNum) => {
+      this.showWaveText(`Wave ${waveNum} Complete!`);
+    });
+  }
+
+  showWaveText(text) {
+    // Create temporary text in center of screen
+    const centerX = this.cameras.main.centerX;
+    const centerY = this.cameras.main.centerY;
+
+    const waveText = this.add.text(centerX, centerY, text, {
+      fontSize: '48px',
+      color: '#ffaa00',
+      stroke: '#000000',
+      strokeThickness: 6
+    }).setOrigin(0.5).setScrollFactor(0).setDepth(150);
+
+    // Fade out and destroy
+    this.tweens.add({
+      targets: waveText,
+      alpha: 0,
+      y: centerY - 50,
+      duration: 2000,
+      onComplete: () => waveText.destroy()
+    });
   }
 
   update(time, delta) {
@@ -196,8 +266,51 @@ export default class TopDownCombatScene extends Phaser.Scene {
     // Constrain player to arena bounds
     this.constrainPlayerToArena();
 
+    // Update game systems
+    this.updateCombat(time, delta);
+
     // Update UI
     this.updateUI();
+  }
+
+  updateCombat(time, delta) {
+    // Update wave manager (spawns and updates enemies)
+    this.waveManager.update(delta, this.player);
+
+    // Update projectiles
+    this.projectileManager.update(delta);
+
+    // Player auto-attack
+    this.player.tryAutoAttack((config) => {
+      this.projectileManager.fire(config);
+    });
+
+    // Check collisions
+    this.checkCollisions();
+  }
+
+  checkCollisions() {
+    const enemies = this.waveManager.getEnemies();
+    const projectiles = this.projectileManager.getActiveProjectiles('player');
+
+    // Check projectile vs enemy collisions
+    projectiles.forEach(projectile => {
+      enemies.forEach(enemy => {
+        if (this.projectileManager.checkCollision(projectile, enemy)) {
+          // Damage enemy
+          const died = enemy.takeDamage(projectile.damage);
+
+          // Deactivate projectile
+          projectile.onHit();
+
+          if (died) {
+            console.log('Enemy defeated!');
+          }
+        }
+      });
+    });
+
+    // Future: Check enemy vs player collision
   }
 
   handlePlayerInput() {
@@ -248,12 +361,20 @@ export default class TopDownCombatScene extends Phaser.Scene {
     this.hpBarFill.width = (200 - 4) * hpPercent;
     this.hpText.setText(`HP: ${Math.ceil(this.player.currentHP)}/${this.player.maxHP}`);
 
+    // Update wave info
+    const wave = this.waveManager.getCurrentWave();
+    const enemyCount = this.waveManager.getEnemies().length;
+    this.waveText.setText(`Wave ${wave}`);
+    this.enemyCountText.setText(`Enemies: ${enemyCount}`);
+
     // Update debug text
+    const projectileCount = this.projectileManager.getActiveProjectiles().length;
     this.debugText.setText(
       `Pos: (${Math.floor(this.player.x)}, ${Math.floor(this.player.y)})\n` +
       `Vel: (${Math.floor(this.player.velocity.x)}, ${Math.floor(this.player.velocity.y)})\n` +
       `State: ${this.player.stateMachine.getCurrentState()}\n` +
-      `Facing: ${Math.floor(Phaser.Math.RadToDeg(this.player.facingAngle))}°`
+      `Facing: ${Math.floor(Phaser.Math.RadToDeg(this.player.facingAngle))}°\n` +
+      `Projectiles: ${projectileCount}`
     );
   }
 }
